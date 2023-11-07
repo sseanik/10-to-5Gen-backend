@@ -2,7 +2,7 @@ import os
 import openai
 import json  
 from thread_utility import ReturnValueThread
-from splitter import ticket_splitter,action_splitter,retro_splitter
+from splitter import ticket_splitter,action_splitter,retro_splitter, user_story_splitter
 
 openai.api_key = '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'
 openai.Model.list()
@@ -96,20 +96,20 @@ def Agile_Master(filename):
         
         data = file.read()
 
-        thread_minutes = ReturnValueThread(target=Compute_Suggest_Jira_Tickets, args=(data,))
-        # thread_action_items = ReturnValueThread(target=Compute_Create_Action_Items, args=(data,))
+        thread_jira = ReturnValueThread(target=Compute_Suggest_Jira_Tickets, args=(data,))
+        thread_story = ReturnValueThread(target=Compute_User_Stories, args=(data,))
         # thread_next_agenda = ReturnValueThread(target=Compute_Create_Next_Agenda, args=(data,))
 
-        thread_minutes.start()
-        # thread_action_items.start()
+        thread_jira.start()
+        thread_story.start()
         # thread_next_agenda.start()
 
 
         # print(data)
 
         to_return = {
-            'jira_tickets':thread_minutes.join(),
-            # 'action_items':thread_action_items.join(),
+            'jira_tickets':thread_jira.join(),
+            'user_story':thread_story.join(),
             # 'next_agenda':thread_next_agenda.join()
         }
 
@@ -122,26 +122,41 @@ def Compute_Suggest_Jira_Tickets(data):
         messages=[
             {"role": "system", "content": "You are a project management assistant, skilled in making Jira tickets."},
 
-            {"role": "user", "content": "Below is the transcript from a meeting. Please suggest several Jira Tickets based off this transcript. Each ticket should have: ticket title, description, Assignee and priority. Please format the response so it looks like this example: Based on the transcript, here are a few Jira tickets that could be created:\n\n1. Ticket Title: Agile Work Environment Integration\n   - Description: Investigate and implement features to align the solution with Telstra's agile work environment, such as support for different types of agile meetings and ceremonies.\n   - Assignee: Steven Yuen\n   - Priority: High\n\n2. Ticket Title: Contextual Output Generation\n   - Description: Develop functionality to use the transcripts of past meetings as context to generate more accurate and valuable output for future meetings.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n3. Ticket Title: Centralized Dashboard\n   - Description: Create a centralized dashboard to manage and track all meetings and their associated artifacts, providing a seamless experience for users.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n4. Ticket Title: Copilot Integration and Customization\n   - Description: Explore the possibility of integrating Telstra's solution with Copilot, tailoring it to meet specific business needs and leveraging the existing platform.\n   - Assignee: Jason Hong\n   - Priority: Medium\n\n5. Ticket Title: Meeting Minutes Tailoring\n   - Description: Modify the meeting minutes feature to align with different meeting types, such as retros, stand-ups, and ceremonies, to provide more relevant and useful outputs.\n   - Assignee: Chris Qu\n   - Priority: Low\n\nPlease note that these suggested tickets are based on the information provided in the transcript and may need to be adjusted based on further discussions and requirements."},
+            {"role": "user", "content": "Below is the transcript from a meeting. Please suggest several Jira Tickets based off this transcript. Each ticket should have: ticket title, description, Assignee, acceptance criteria, duration estimate and priority. Please format the response so it looks like this example: Based on the transcript, here are a few Jira tickets that could be created:\n\n1. Ticket Title: Agile Work Environment Integration\n   - Description: Investigate and implement features to align the solution with Telstra's agile work environment, such as support for different types of agile meetings and ceremonies.\n   - Assignee: Steven Yuen\n   - Acceptance Criteria: The solution should provide features that are tailored to agile work practices and support different types of agile meetings. It should integrate seamlessly with Telstra's existing agile tools and workflows.\n   - Duration Estimate: 2 days\n   - Priority: High\n\n2. Ticket Title: Contextual Output Generation\n   - Description: Develop functionality to use the transcripts of past meetings as context to generate more accurate and valuable output for future meetings.\n   - Assignee: Steven Yuen\n   - Acceptance Criteria: The solution should analyze past meeting transcripts and use the context to generate meeting outputs that are tailored to the specific meeting type. The generated output should provide valuable insights and recommendations based on the accumulated knowledge from past meetings.\n   - Duration Estimate: 4 days\n   - Priority: Medium\n\n3. Ticket Title: Centralized Dashboard\n   - Description: Create a centralized dashboard to manage and track all meetings and their associated artifacts, providing a seamless experience for users.\n   - Assignee: Steven Yuen\n   - Acceptance Criteria: The dashboard should allow users to easily schedule, manage, and track meetings. It should provide visibility into meeting details, attendees, agenda, and generated outputs. The dashboard should also support integration with Telstra's existing tools and systems.\n   - Duration Estimate: 2 days\n   - Priority: Medium\n\n4. Ticket Title: Copilot Integration and Customization\n   - Description: Explore the possibility of integrating Telstra's solution with Copilot, tailoring it to meet specific business needs and leveraging the existing platform.\n   - Assignee: Jason Hong\n   - Acceptance Criteria: The integration with Copilot should allow Telstra's solution to complement and enhance the functionalities provided by Copilot. The integration should be seamless and provide added value to Telstra's users. Customization options should be explored to align with Telstra's unique requirements.\n   - Duration Estimate: 4 days\n   - Priority: Medium\n\n5. Ticket Title: Meeting Minutes Tailoring\n   - Description: Modify the meeting minutes feature to align with different meeting types, such as retros, stand-ups, and ceremonies, to provide more relevant and useful outputs.\n   - Assignee: Chris Qu\n   - Acceptance Criteria: The meeting minutes feature should be enhanced to adapt to different meeting types and generate meeting summaries that are tailored to the specific purpose of the meeting. The tailored meeting minutes should provide key highlights, action items, and insights based on the discussions and outcomes of each meeting type.\n   - Duration Estimate: 3 days\n   - Priority: Low\n\nPlease note that these suggested tickets are based on the information provided in the transcript and may need to be adjusted based on further discussions and requirements."},
+            # {"role": "user", "content": "Below is the transcript from a meeting. Please suggest several Jira Tickets based off this transcript. Each ticket should have: ticket title, description, Assignee and priority. Please format the response so it looks like this example: Based on the transcript, here are a few Jira tickets that could be created:\n\n1. Ticket Title: Agile Work Environment Integration\n   - Description: Investigate and implement features to align the solution with Telstra's agile work environment, such as support for different types of agile meetings and ceremonies.\n   - Assignee: Steven Yuen\n   - Priority: High\n\n2. Ticket Title: Contextual Output Generation\n   - Description: Develop functionality to use the transcripts of past meetings as context to generate more accurate and valuable output for future meetings.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n3. Ticket Title: Centralized Dashboard\n   - Description: Create a centralized dashboard to manage and track all meetings and their associated artifacts, providing a seamless experience for users.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n4. Ticket Title: Copilot Integration and Customization\n   - Description: Explore the possibility of integrating Telstra's solution with Copilot, tailoring it to meet specific business needs and leveraging the existing platform.\n   - Assignee: Jason Hong\n   - Priority: Medium\n\n5. Ticket Title: Meeting Minutes Tailoring\n   - Description: Modify the meeting minutes feature to align with different meeting types, such as retros, stand-ups, and ceremonies, to provide more relevant and useful outputs.\n   - Assignee: Chris Qu\n   - Priority: Low\n\nPlease note that these suggested tickets are based on the information provided in the transcript and may need to be adjusted based on further discussions and requirements."},
             {"role": "user", "content": data}
         ]
     )
 
-    # Split the input string using '\n\n' as the delimiter
-    # split_strings = completion.choices[0].message.split('\n\n')
-
-    # num_tickets=len(split_strings)
-
-    # # for i in range(0,len(split_strings)):
-
-
-    # to_return = {'tickets':split_strings[1:num_tickets]}
 
     print(completion.choices[0].message)
     print(completion.choices[0].message["content"])
 
+    # return ticket_splitter(completion.choices[0].message)
 
     return ticket_splitter(completion.choices[0].message["content"])
+
+def Compute_User_Stories(data):
+    
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {"role": "system", "content": "You are a project management assistant, skilled in making agile user stories."},
+
+            {"role": "user", "content": "Below is the transcript from a meeting. Please suggest several user stories in the format: as a [], I want [] so that []. Use the format that is in this example: As a Telstra employee, I want a user-friendly agile project management tool so that I can efficiently manage and track all agile ceremonies and tasks.\n\nAs a project manager, I want a central dashboard to integrate all agile meetings and provide a consistent timeline so that I can easily track and manage all project activities.\n\nAs a team member, I want an AI-powered solution that generates meeting minutes tailored for agile ceremonies, such as retros, stand-ups, and planning sessions, so that I can have a clear record of discussions and action items.\n\nAs a Telstra executive, I want a solution that provides a transcript of agile meetings and generates reports based on the meeting content so that I can gain insights and make informed decisions.\n\nAs a user of an agile work environment, I want a solution that automates repetitive administrative tasks, such as generating tickets and updating progress, so that I can focus more on actual work.\n\nAs a Telstra employee, I want a cost-effective agile project management tool that offers similar features as Copilot but can be tailored specifically for Telstra's needs, so that we can save costs without compromising functionality."},
+            {"role": "user", "content": data}
+        ]
+    )
+
+
+    print(completion.choices[0].message)
+    print(completion.choices[0].message["content"])
+    print("ticket splitter")
+
+
+    return user_story_splitter(completion.choices[0].message["content"])
+    # return (completion.choices[0])
+
 
 def Retro_Master(filename):
 
@@ -180,20 +195,7 @@ def Compute_Retro_Suggestions(data):
         ]
     )
 
-    # Split the input string using '\n\n' as the delimiter
-    # split_strings = completion.choices[0].message.split('\n\n')
 
-    # num_tickets=len(split_strings)
-
-    # # for i in range(0,len(split_strings)):
-
-
-    # to_return = {'tickets':split_strings[1:num_tickets]}
-
-    # print(completion.choices[0].message)
-    # print(completion.choices[0].message["content"])
-
-    # return (completion.choices[0].message)
 
 
     return retro_splitter(completion.choices[0].message["content"])

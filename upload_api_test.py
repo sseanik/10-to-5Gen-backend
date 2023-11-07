@@ -5,11 +5,24 @@ files = {'file': open('inputs/transcript_1.vtt','rb')}
 
 # print(files)
 
-url = "http://13.211.169.215:5000/retrohelp"
+# 13.211.169.215:5000
+# 127.0.0.1:5000
 
-r = requests.post(url, files=files)
+# url = "http://13.211.169.215:5000/files/agile"
 
 # r = requests.get(url)
+
+# url = "http://13.211.169.215:5000/uploadtranscript"
+
+url = "http://13.211.169.215:5000/masterlist"
+
+r = requests.get(url)
+
+
+
+# r = requests.post(url, files=files)
+
+# r = requests.post(url,data={'name':'test_name','date':'1/1/2000'},files=files)
 
 
 print(r.json())

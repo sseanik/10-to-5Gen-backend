@@ -89,6 +89,23 @@ def retro_splitter(input_string):
 
     return action_items
 
+def user_story_splitter(input_string):
+    # Split the input string into requirements based on '\n\n'
+    requirements = input_string.split('\n\n')
+
+    # Initialize an empty dictionary to store the requirements
+    requirements_dict = {}
+
+    # Initialize a counter for requirement numbers
+    requirement_number = 1
+
+    for requirement_text in requirements:
+        # Add the requirement to the dictionary with a generated number as the key
+        requirements_dict[f"{requirement_number}. Requirement"] = requirement_text
+        requirement_number += 1
+
+    return requirements_dict
+
 def main():
     action_splitter("Action Items:\n\n1. Steven Yuen:\n- Research and identify features that cater to Agile work environments.\n- Investigate the use of a centralized dashboard for managing meetings.\n- Determine how the solution can differentiate itself from Copilot.\n- Gather requirements and file from the stakeholders.\n\n2. Jason Hong:\n- Continue working on current tasks and projects.\n\n3. David Gailey:\n- Support the shift towards an Agile focus for the solution.\n- Assist in identifying unique features and value proposition compared to Copilot.\n\n4. Chris Qu:\n- Participate in discussions and provide input on the direction of the solution.\n- Assist in determining the necessary features for the Telstra-focused solution.\n\n5. All team members:\n- Collaborate on integrating Copilot into the solution in the long term.\n\n6. Steven Yuen and Jason Hong:\n- Discuss the issue of Copilot access and find a solution.\n\n7. Steven Yuen:\n- Chase up the requirements from the stakeholders.")
 
