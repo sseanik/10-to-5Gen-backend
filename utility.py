@@ -1,23 +1,42 @@
 import os
 import openai
 import json  
+from thread_utility import ReturnValueThread
+from splitter import ticket_splitter,action_splitter,retro_splitter
 
 openai.api_key = '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'
 openai.Model.list()
 
-def AIGEN(filename):
+def Meeting_Master(filename):
 
     with open("uploads/"+filename,'r') as file:
+        
         data = file.read()
 
-        print(data)
+        thread_minutes = ReturnValueThread(target=Compute_Create_Meeting_Minutes, args=(data,))
+        thread_action_items = ReturnValueThread(target=Compute_Create_Action_Items, args=(data,))
+        thread_next_agenda = ReturnValueThread(target=Compute_Create_Next_Agenda, args=(data,))
 
-        Compute_Create_Meeting_Minutes(data)
+        thread_minutes.start()
+        thread_action_items.start()
+        thread_next_agenda.start()
+
+
+        # print(data)
+
+        to_return = {
+            'minutes':thread_minutes.join(),
+            'action_items':thread_action_items.join(),
+            'next_agenda':thread_next_agenda.join()
+        }
+
+    return to_return
+
 
 def Compute_Create_Meeting_Minutes(data):
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo-16k",
         messages=[
             {"role": "system", "content": "You are a project management assistant, skilled in explaining complex programming concepts with creative flair."},
             # {"role": "user", "content": "Can you imagine and create a transcript from a fictional meeting involving four people."}
@@ -27,19 +46,154 @@ def Compute_Create_Meeting_Minutes(data):
         ]
     )
 
-    f = open("processed/minutes.txt", "w")
-    f.write(str(completion.choices[0].message))
-    f.close()
+    # f = open("processed/minutes.txt", "w")
+    # f.write(str(completion.choices[0].message))
+    # f.close()
 
-    # the json file where the output must be stored  
-    out_file = open("processed/minutes.json", "w")  
+    # # the json file where the output must be stored  
+    # out_file = open("processed/minutes.json", "w")  
     
-    json.dump(completion.choices[0].message, out_file, indent = 6)  
+    # json.dump(completion.choices[0].message, out_file, indent = 6)  
     
-    out_file.close()
+    # out_file.close()
+
+    # print(completion.choices[0].message)
+
+    return completion.choices[0].message
+
+def Compute_Create_Action_Items(data):
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {"role": "system", "content": "You are a project management assistant, skilled in explaining complex programming concepts with creative flair."},
+
+            {"role": "user", "content": "Below is the transcript from a meeting. Please create a list of action items for each person. Please format it like in this example: Action Items:\n\n1. Steven Yuen:\n- Research and identify features that cater to Agile work environments.\n- Investigate the use of a centralized dashboard for managing meetings.\n- Determine how the solution can differentiate itself from Copilot.\n- Gather requirements and file from the stakeholders.\n\n2. Jason Hong:\n- Continue working on current tasks and projects.\n\n3. David Gailey:\n- Support the shift towards an Agile focus for the solution.\n- Assist in identifying unique features and value proposition compared to Copilot.\n\n4. Chris Qu:\n- Participate in discussions and provide input on the direction of the solution.\n- Assist in determining the necessary features for the Telstra-focused solution.\n\n5. All team members:\n- Collaborate on integrating Copilot into the solution in the long term.\n\n6. Steven Yuen and Jason Hong:\n- Discuss the issue of Copilot access and find a solution.\n\n7. Steven Yuen:\n- Chase up the requirements from the stakeholders."},
+            {"role": "user", "content": data}
+        ]
+    )
+
+    return action_splitter(completion.choices[0].message["content"])
+
+def Compute_Create_Next_Agenda(data):
+    
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {"role": "system", "content": "You are a project management assistant, skilled in explaining complex programming concepts with creative flair."},
+
+            {"role": "user", "content": "Below is the transcript from a meeting. Please create an agenda for the next meeting."},
+            {"role": "user", "content": data}
+        ]
+    )
+
+    return completion.choices[0].message
+
+
+def Agile_Master(filename):
+
+    with open("uploads/"+filename,'r') as file:
+        
+        data = file.read()
+
+        thread_minutes = ReturnValueThread(target=Compute_Suggest_Jira_Tickets, args=(data,))
+        # thread_action_items = ReturnValueThread(target=Compute_Create_Action_Items, args=(data,))
+        # thread_next_agenda = ReturnValueThread(target=Compute_Create_Next_Agenda, args=(data,))
+
+        thread_minutes.start()
+        # thread_action_items.start()
+        # thread_next_agenda.start()
+
+
+        # print(data)
+
+        to_return = {
+            'jira_tickets':thread_minutes.join(),
+            # 'action_items':thread_action_items.join(),
+            # 'next_agenda':thread_next_agenda.join()
+        }
+
+    return to_return
+
+def Compute_Suggest_Jira_Tickets(data):
+    
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {"role": "system", "content": "You are a project management assistant, skilled in making Jira tickets."},
+
+            {"role": "user", "content": "Below is the transcript from a meeting. Please suggest several Jira Tickets based off this transcript. Each ticket should have: ticket title, description, Assignee and priority. Please format the response so it looks like this example: Based on the transcript, here are a few Jira tickets that could be created:\n\n1. Ticket Title: Agile Work Environment Integration\n   - Description: Investigate and implement features to align the solution with Telstra's agile work environment, such as support for different types of agile meetings and ceremonies.\n   - Assignee: Steven Yuen\n   - Priority: High\n\n2. Ticket Title: Contextual Output Generation\n   - Description: Develop functionality to use the transcripts of past meetings as context to generate more accurate and valuable output for future meetings.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n3. Ticket Title: Centralized Dashboard\n   - Description: Create a centralized dashboard to manage and track all meetings and their associated artifacts, providing a seamless experience for users.\n   - Assignee: Steven Yuen\n   - Priority: Medium\n\n4. Ticket Title: Copilot Integration and Customization\n   - Description: Explore the possibility of integrating Telstra's solution with Copilot, tailoring it to meet specific business needs and leveraging the existing platform.\n   - Assignee: Jason Hong\n   - Priority: Medium\n\n5. Ticket Title: Meeting Minutes Tailoring\n   - Description: Modify the meeting minutes feature to align with different meeting types, such as retros, stand-ups, and ceremonies, to provide more relevant and useful outputs.\n   - Assignee: Chris Qu\n   - Priority: Low\n\nPlease note that these suggested tickets are based on the information provided in the transcript and may need to be adjusted based on further discussions and requirements."},
+            {"role": "user", "content": data}
+        ]
+    )
+
+    # Split the input string using '\n\n' as the delimiter
+    # split_strings = completion.choices[0].message.split('\n\n')
+
+    # num_tickets=len(split_strings)
+
+    # # for i in range(0,len(split_strings)):
+
+
+    # to_return = {'tickets':split_strings[1:num_tickets]}
 
     print(completion.choices[0].message)
+    print(completion.choices[0].message["content"])
 
 
-def Compute_Suggest_Jira_Tickets():
-    pass
+    return ticket_splitter(completion.choices[0].message["content"])
+
+def Retro_Master(filename):
+
+    with open("uploads/"+filename,'r') as file:
+        
+        data = file.read()
+
+        thread_retro = ReturnValueThread(target=Compute_Retro_Suggestions, args=(data,))
+        # thread_action_items = ReturnValueThread(target=Compute_Create_Action_Items, args=(data,))
+        # thread_next_agenda = ReturnValueThread(target=Compute_Create_Next_Agenda, args=(data,))
+
+        thread_retro.start()
+        # thread_action_items.start()
+        # thread_next_agenda.start()
+
+
+        # print(data)
+
+        to_return = {
+            'retro_actions':thread_retro.join(),
+            # 'action_items':thread_action_items.join(),
+            # 'next_agenda':thread_next_agenda.join()
+        }
+
+    return to_return
+
+def Compute_Retro_Suggestions(data):
+    
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-16k",
+        messages=[
+            {"role": "system", "content": "You are a project management assistant, skilled in making agile retro ceremony action points."},
+
+            {"role": "user", "content": "Below is the transcript from an agile retro meeting. Please suggest several action points based off this retro.Please use this format: Based on the transcript from the retrospective meeting, here are several action points that can be derived:\n\n1. Differentiate our product with an Agile focus: Tailor our solution towards an Agile work environment, since this is something that the current copilot solution lacks. This can include features that reduce time-consuming administrative tasks and cater specifically to Agile ceremonies such as retrospectives and stand-ups.\n\n2. Make the most out of the context window: Ensure that our solution can accumulate knowledge from past meetings and use it to provide valuable insights. This can involve improving the meeting generator to take into account the purpose of the meeting (retro, stand-up, ceremony) and adjust the output accordingly.\n\n3. Create a centralized dashboard: Differentiate our product by developing a central dashboard that allows users to manage and track all their meetings and associated tasks. This will add value by providing a centralized and streamlined experience, which is currently lacking in the copilot solution.\n\n4. Integrate with copilot in the long term: While access to copilot is currently limited, we can consider integrating our solution with copilot in the future. This will require collaboration and co-development with Microsoft, leveraging our strategic partnership, and allowing for a more seamless experience for users.\n\n5. Investigate Telstra-specific needs: Research and analyze Telstra's Agile work environment and identify any specific requirements and pain points that can be addressed by our solution. This will enable us to create a product that is tailored to Telstra's needs and provides a unique value proposition.\n\n6. Gather requirements: Chase up the requirements from the product stakeholders, such as the business and executive teams, to ensure that their needs are considered in the development of the solution.\n\nThese action points address the goal of differentiating our product from copilot and ensuring that it aligns with Telstra's Agile work environment, while also considering the integration possibilities with copilot in the long term."},
+            {"role": "user", "content": data}
+        ]
+    )
+
+    # Split the input string using '\n\n' as the delimiter
+    # split_strings = completion.choices[0].message.split('\n\n')
+
+    # num_tickets=len(split_strings)
+
+    # # for i in range(0,len(split_strings)):
+
+
+    # to_return = {'tickets':split_strings[1:num_tickets]}
+
+    # print(completion.choices[0].message)
+    # print(completion.choices[0].message["content"])
+
+    # return (completion.choices[0].message)
+
+
+    return retro_splitter(completion.choices[0].message["content"])

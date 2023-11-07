@@ -1,8 +1,11 @@
 import requests
 
-files = {'file': open('inputs/file.txt','rb')}
+files = {'file': open('inputs/transcript_1.vtt','rb')}
+# files = {'file': open('inputs/file.txt','rb')}
 
-url = "http://127.0.0.1:5000"
+# print(files)
+
+url = "http://13.211.169.215:5000/retrohelp"
 
 r = requests.post(url, files=files)
 
