@@ -14,7 +14,9 @@ files = {'file': open('inputs/transcript_1.vtt','rb')}
 
 # url = "http://13.211.169.215:5000/uploadtranscript"
 
-url = "http://13.211.169.215:5000/masterlist"
+# url = "http://13.211.169.215:5000/masterlist"
+
+url = "http://13.211.169.215:5000/files/1"
 
 r = requests.get(url)
 
@@ -23,6 +25,9 @@ r = requests.get(url)
 # r = requests.post(url, files=files)
 
 # r = requests.post(url,data={'name':'test_name','date':'1/1/2000'},files=files)
+
+# r = requests.post(url,data={'name':'test_name_4','meetingType':'Standup'},files=files)
+
 
 
 print(r.json())

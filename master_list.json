@@ -1,0 +1,28 @@
+[
+    {
+        "ID": 1,
+        "title": "test_name_3",
+        "type": "Standup",
+        "date": "6/11/2023",
+        "duration": "16:38",
+        "attendees": [
+            "Yuen, Steven",
+            "Hong, Jason",
+            "Gailey, David",
+            "Qu, Chris"
+        ]
+    },
+    {
+        "ID": 2,
+        "title": "test_name_3",
+        "type": "Standup",
+        "date": "6/11/2023",
+        "duration": "16:38",
+        "attendees": [
+            "Yuen, Steven",
+            "Hong, Jason",
+            "Gailey, David",
+            "Qu, Chris"
+        ]
+    }
+]

@@ -66,7 +66,7 @@ def action_splitter(input_string):
 
 def retro_splitter(input_string):
 
-    print(input_string)
+    # print(input_string)
 
     # Split the input string into sections based on '\n\n'
     sections = input_string.split('\n\n')

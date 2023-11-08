@@ -1,7 +1,7 @@
 import os
 from flask import Flask, flash, request, redirect, url_for,jsonify
 from werkzeug.utils import secure_filename
-from utility import Meeting_Master,Agile_Master,Retro_Master
+from utility import Meeting_Master,Agile_Master,Retro_Master,Master_AI
 from format import *
 import json
 
@@ -42,52 +42,9 @@ def make_folder(ID):
 
     return
 
-def make_file_metadata(file_path,meta_dict):
 
-    full_path = file_path + '/meta.json'
 
-    with open(full_path, 'w') as outfile:
-        json.dump(meta_dict, outfile)
 
-    meta_master_maker()
-
-    return
-
-def meta_master_maker():
-
-    # Define the root folder where you want to start scanning
-    root_folder = os.getcwd()+'/meetings'
-
-    # Define the output file where you want to aggregate the data
-    output_file = 'master.json'
-
-    # Collect JSON files
-    json_files = collect_json_files(root_folder)
-
-    # Aggregate JSON files into the master JSON file
-    aggregate_json_files(json_files, output_file)
-    return
-
-# Function to recursively scan subfolders and collect JSON files
-def collect_json_files(root_folder):
-    json_files = []
-    for root, dirs, files in os.walk(root_folder):
-        for file in files:
-            if file.endswith('.json'):
-                json_files.append(os.path.join(root, file))
-    return json_files
-
-# Function to aggregate JSON files into a master JSON file
-def aggregate_json_files(json_files, output_file):
-    master_data = []
-
-    for json_file in json_files:
-        with open(json_file, 'r') as file:
-            data = json.load(file)
-            master_data.append(data)
-
-    with open(output_file, 'w') as outfile:
-        json.dump(master_data, outfile, indent=4)
 
 # @app.route('/meetingminute/<filename>', methods=['GET'])
 # def get_meeting_minute(filename):
@@ -103,12 +60,29 @@ def aggregate_json_files(json_files, output_file):
 #         return jsonify({'data': data}) 
 #         # return "Got em"
 
-@app.route('/files/<filename>', methods=['GET'])
-def get_file(filename):
+# @app.route('/files/<filename>', methods=['GET'])
+# def get_file(filename):
+    
+#     if(request.method == 'GET'): 
+
+#         file_name = "processed/"+str(filename)+".json"
+
+#         try:
+
+#             with open(file_name,'r') as file:
+#                 data = file.read()
+  
+#             return jsonify({'data': data}) 
+#         except:
+#             return jsonify({'data': "File not found"})
+#         # return "Got em"
+
+@app.route('/files/<id>', methods=['GET'])
+def get_file(id):
     
     if(request.method == 'GET'): 
 
-        file_name = "processed/"+str(filename)+".json"
+        file_name = "meetings/"+str(id)+"/master_output.json"
 
         try:
 
@@ -175,25 +149,28 @@ def upload_file():
             make_folder(meeting_counter)
             app.config['UPLOAD_FOLDER'] = 'meetings/' +str(meeting_counter)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            print("here")
+            print("running")
             
             # Access form data
+            meta_type = request.form.get('meetingType')
             meta_name = request.form.get('name')
-            meta_date = request.form.get('date')
 
-            make_file_metadata('meetings/' +str(meeting_counter),{'ID':meeting_counter,'name':meta_name,'date':meta_date})
+            # meta_name = request.form.get('name')
+            # meta_date = request.form.get('date')
 
+            meta_dict = Master_AI(filename,meeting_counter,meta_name,meta_type)
 
+            # make_file_metadata('meetings/' +str(meeting_counter),{'ID':meeting_counter,'title':meta_name,'type':meta_type,'date':'1/1/2020','duration':10,'attendees':["Attendees"]})
 
             # print(meta_data)
             
             
             meeting_counter = meeting_counter + 1
             
-            print('here 3')
+            # print('here 3')
 
   
-            return jsonify({'meeting ID': old_meeting_counter}) 
+            return jsonify({'ID': old_meeting_counter,'title':meta_dict['title'],'type':meta_dict['type'],'date':meta_dict['date'],'attendees':meta_dict['attendees']}) 
     return
 
 @app.route('/masterlist', methods=['GET'])
