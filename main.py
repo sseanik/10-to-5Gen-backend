@@ -13,9 +13,16 @@ app.config['UPLOAD_FOLDER'] = 'meetings/1'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = 'super secret key'
 
-global meeting_counter
-meeting_counter = 1
+# global meeting_counter
+# meeting_counter = 1
+folder_path = os.getcwd() + '/meetings' # Replace with the actual folder path
 
+if os.path.exists(folder_path) and os.path.isdir(folder_path):
+    subfolders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
+    global meeting_counter
+    meeting_counter = len(subfolders) + 1
+
+print(meeting_counter)
 
 def allowed_file(filename):
     return '.' in filename and \
