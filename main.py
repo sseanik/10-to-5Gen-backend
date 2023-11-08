@@ -4,15 +4,20 @@ from werkzeug.utils import secure_filename
 from utility import Meeting_Master,Agile_Master,Retro_Master,Master_AI
 from format import *
 import json
+from flask_cors import CORS, cross_origin
+
 
 # UPLOAD_FOLDER = 'meetings'
 ALLOWED_EXTENSIONS = {'txt','vtt','docx'}
 
 app = Flask(__name__)
+CORS(app)
 app.config['UPLOAD_FOLDER'] = 'meetings/1'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = 'super secret key'
-app.config['JSON_SORT_KEYS'] = False
+# app.config['JSON_SORT_KEYS'] = False
+app.json.sort_keys = False
+
 
 
 # global meeting_counter
@@ -24,7 +29,7 @@ if os.path.exists(folder_path) and os.path.isdir(folder_path):
     global meeting_counter
     meeting_counter = len(subfolders) + 1
 
-print(meeting_counter)
+# print(meeting_counter)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -87,6 +92,7 @@ def make_folder(ID):
 #         # return "Got em"
 
 @app.route('/files/<id>', methods=['GET'])
+@cross_origin() # allow all origins all methods.
 def get_file(id):
     
     if(request.method == 'GET'): 
@@ -137,6 +143,7 @@ def home_page():
     '''
 
 @app.route('/uploadtranscript', methods=[ 'POST'])
+@cross_origin() # allow all origins all methods
 def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
@@ -167,22 +174,32 @@ def upload_file():
             # meta_name = request.form.get('name')
             # meta_date = request.form.get('date')
 
-            meta_dict = Master_AI(filename,meeting_counter,meta_name,meta_type)
+            try:
+                meta_dict = Master_AI(filename,meeting_counter,meta_name,meta_type)
 
             # make_file_metadata('meetings/' +str(meeting_counter),{'ID':meeting_counter,'title':meta_name,'type':meta_type,'date':'1/1/2020','duration':10,'attendees':["Attendees"]})
 
             # print(meta_data)
             
             
-            meeting_counter = meeting_counter + 1
+                meeting_counter = meeting_counter + 1
+            except:
+                pass
+                # print('exception')
+                # for root, dirs, files in os.walk( os.getcwd() + '/meetings'):
+                #     if filename in files:
+                #         with open(str(root)+'/master_output','r') as file:
+                #             data = json.load(file)
+
+                #             return jsonify({'ID': data['Meta']['ID'],'title':data['Meta']['title'],'type':data['Meta']['type'],'date':data['Meta']['date'],'attendees':data['Meta']['attendees']})
             
-            # print('here 3')
 
   
             return jsonify({'ID': old_meeting_counter,'title':meta_dict['title'],'type':meta_dict['type'],'date':meta_dict['date'],'attendees':meta_dict['attendees']}) 
     return
 
 @app.route('/masterlist', methods=['GET'])
+@cross_origin() # allow all origins all methods.
 def return_master_file():
     
     if(request.method == 'GET'): 

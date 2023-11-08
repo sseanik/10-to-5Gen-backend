@@ -1,7 +1,7 @@
 [
     {
         "ID": 1,
-        "title": "test_name_5",
+        "title": "daily standup 6/11/2023",
         "type": "Standup",
         "date": "6/11/2023",
         "duration": "16:38",
@@ -13,55 +13,23 @@
         ]
     },
     {
-        "ID": 2,
-        "title": "test_name_5",
+        "ID": 1,
+        "title": "test_name_6D",
         "type": "Standup",
-        "date": "6/11/2023",
-        "duration": "16:38",
+        "date": "8/11/2023",
+        "duration": "22 minutes",
         "attendees": [
-            "Yuen, Steven",
-            "Hong, Jason",
-            "Gailey, David",
-            "Qu, Chris"
+            "Emma, Raj, Olivia, Noah, Mia, Liam, Ava"
         ]
     },
     {
-        "ID": 4,
-        "title": "test_name_5",
+        "ID": 3,
+        "title": "test_name_6D",
         "type": "Standup",
-        "date": "6/11/2023",
-        "duration": "16:38",
+        "date": "8/11/2023",
+        "duration": "22 minutes",
         "attendees": [
-            "Yuen, Steven",
-            "Hong, Jason",
-            "Gailey, David",
-            "Qu, Chris"
-        ]
-    },
-    {
-        "ID": 6,
-        "title": "test_name_5",
-        "type": "Standup",
-        "date": "6/11/2023",
-        "duration": "16:38",
-        "attendees": [
-            "Yuen, Steven",
-            "Hong, Jason",
-            "Gailey, David",
-            "Qu, Chris"
-        ]
-    },
-    {
-        "ID": 7,
-        "title": "test_name_5",
-        "type": "Standup",
-        "date": "6/11/2023",
-        "duration": "16:38",
-        "attendees": [
-            "Yuen, Steven",
-            "Hong, Jason",
-            "Gailey, David",
-            "Qu, Chris"
+            "Emma, Raj, Olivia, Noah, Mia, Liam, Ava"
         ]
     }
 ]
