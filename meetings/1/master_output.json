@@ -1,0 +1,85 @@
+{
+      "Meta": {
+            "ID": 1,
+            "title": "test_name_3",
+            "type": "Standup",
+            "date": "6/11/2023",
+            "duration": "16:38",
+            "attendees": [
+                  "Yuen, Steven",
+                  "Hong, Jason",
+                  "Gailey, David",
+                  "Qu, Chris"
+            ]
+      },
+      "Meeting": {
+            "minutes": {
+                  "role": "assistant",
+                  "content": "Meeting Minutes\n\nMeeting Date: 6/11/2023\nMeeting Start Time: 2.30 PM\nEnd Time: 3.00 PM\nMeeting Location: Online\n\nAttendees:\n- Steven Yuen\n- Jason Hong\n- David Gailey\n- Chris Qu\n\nAgenda:\n- Differentiating our solution from Copilot\n- Tailoring our solution to Telstra's agile work environment\n- Leveraging Copilot for integration\n- Exploring the use of Gen AI to improve employee experience\n- Potential features of our solution\n- Centralized dashboard as a differentiating factor\n\nDiscussion Summary:\n- Steven noted that there is a lot of overlap between our current solution and Copilot. To differentiate ourselves, we should focus on the agile work environment and address gaps that Copilot does not cover.\n- Steven suggested tailoring our solution towards an agile work environment and using context from past meetings to generate outputs.\n- Cost is another differentiating factor, as our solution is cheaper than Copilot.\n- Jason proposed leveraging Copilot to tailor it to our needs instead of competing directly.\n- However, access to Copilot is limited, so it may be better to create our own agile-focused solution for Telstra.\n- David mentioned the usefulness of a centralized dashboard to manage meetings and create a consistent timeline.\n- The group agreed to shift the focus of our solution towards Telstra's agile work environment and explore the ticket generation as a main feature.\n- Steven will conduct further research on agile practices and the use of a centralized dashboard.\n- Chris left the meeting early, but his input on the use of retrospectives was noted.\n- The group discussed the potential relevance of meeting minutes and retrospectives in an agile context.\n- David and Steven agreed to keep working on the current solution while adapting it for the new requirements.\n- Steven will follow up on receiving the requirements file.\n- The meeting ended with plans to reconvene later for further discussions and updates.\n\nNext Steps:\n- Steven will research agile practices and the use of a centralized dashboard.\n- David and Steven will adapt and improve the current solution.\n- Jason and Steven will discuss the use of Copilot for integration.\n\nMeeting adjourned at 3.00 PM.\n\nMinutes prepared by [Your Name]"
+            },
+            "action_items": null,
+            "next_agenda": {
+                  "role": "assistant",
+                  "content": "Meeting Agenda\nMeeting Date: [Next Meeting Date]\nMeeting Start Time: [Next Meeting Start Time]\nEnd Time: [Next Meeting End Time]\nMeeting Location: [Next Meeting Location]\n\n1. Review of Previous Meeting: Discuss the key points discussed in the previous meeting, specifically the differentiation factors between our solution and Copilot.\n\n2. Agile Work Environment: Discuss how we can tailor our solution to be more focused on the agile work environment, taking into consideration the administrative tasks and recurring meetings commonly found in agile teams.\n\n3. Context Window: Explore the idea of leveraging the context window to accumulate knowledge from past meetings and use it to improve our solution.\n\n4. Pricing and Features: Discuss the pricing and features of Copilot and how we can position our solution as a more cost-effective alternative with additional features.\n\n5. Integration with Copilot: Discuss the possibility of collaborating and integrating our solution with Copilot in the long term to provide a more seamless experience.\n\n6. Centralized Dashboard: Explore the idea of developing a centralized dashboard to manage meetings, generate actionable insights, and improve employee experience.\n\n7. Meeting Minutes and Retrospectives: Discuss the relevance of meeting minutes and retrospectives in agile teams, and how we can tailor them to provide value within our solution.\n\n8. Action Items: Assign specific tasks and responsibilities to team members for further research and development.\n\n9. Next Steps: Determine the next steps to be taken, including timelines, resources required, and any potential roadblocks to consider.\n\n10. Open Floor: Allow team members to ask questions, provide additional insights, or raise any concerns they may have regarding the agenda topics.\n\n11. Adjournment: End the meeting on time and confirm the date and time of the next meeting."
+            }
+      },
+      "Jira": {
+            "jira_tickets": [
+                  {
+                        "1. Ticket Title": "Agile Work Environment Integration",
+                        "- Description": "Investigate and implement features to align the solution with Telstra's agile work environment, such as support for different types of agile meetings and ceremonies.",
+                        "- Assignee": "Steven Yuen",
+                        "- Acceptance Criteria": "The solution should provide features that are tailored to agile work practices and support different types of agile meetings. It should integrate seamlessly with Telstra's existing agile tools and workflows.",
+                        "- Duration Estimate": "2 days",
+                        "- Priority": "High",
+                        "- User-story": "As a project manager, I want a central dashboard to integrate all agile meetings and provide a consistent timeline so that I can easily track and manage all project activities."
+                  },
+                  {
+                        "2. Ticket Title": "Contextual Output Generation",
+                        "- Description": "Develop functionality to use the transcripts of past meetings as context to generate more accurate and valuable output for future meetings.",
+                        "- Assignee": "Steven Yuen",
+                        "- Acceptance Criteria": "The solution should analyze past meeting transcripts and use the context to generate meeting outputs that are tailored to the specific meeting type. The generated output should provide valuable insights and recommendations based on the accumulated knowledge from past meetings.",
+                        "- Duration Estimate": "4 days",
+                        "- Priority": "Medium",
+                        "- User-story": "As a team member, I want an AI-powered solution that generates meeting minutes tailored for agile ceremonies, such as retros, stand-ups, and planning sessions, so that I can have a clear record of discussions and action items."
+                  },
+                  {
+                        "3. Ticket Title": "Centralized Dashboard",
+                        "- Description": "Create a centralized dashboard to manage and track all meetings and their associated artifacts, providing a seamless experience for users.",
+                        "- Assignee": "Steven Yuen",
+                        "- Acceptance Criteria": "The dashboard should allow users to easily schedule, manage, and track meetings. It should provide visibility into meeting details, attendees, agenda, and generated outputs. The dashboard should also support integration with Telstra's existing tools and systems.",
+                        "- Duration Estimate": "2 days",
+                        "- Priority": "Medium",
+                        "- User-story": "As a Telstra executive, I want a solution that provides a transcript of agile meetings and generates reports based on the meeting content so that I can gain insights and make informed decisions."
+                  },
+                  {
+                        "4. Ticket Title": "Copilot Integration and Customization",
+                        "- Description": "Explore the possibility of integrating Telstra's solution with Copilot, tailoring it to meet specific business needs and leveraging the existing platform.",
+                        "- Assignee": "Jason Hong",
+                        "- Acceptance Criteria": "The integration with Copilot should allow Telstra's solution to complement and enhance the functionalities provided by Copilot. The integration should be seamless and provide added value to Telstra's users. Customization options should be explored to align with Telstra's unique requirements.",
+                        "- Duration Estimate": "4 days",
+                        "- Priority": "Medium",
+                        "- User-story": "As a user of an agile work environment, I want a solution that automates repetitive administrative tasks, such as generating tickets and updating progress, so that I can focus more on actual work."
+                  },
+                  {
+                        "5. Ticket Title": "Meeting Minutes Tailoring",
+                        "- Description": "Modify the meeting minutes feature to align with different meeting types, such as retros, stand-ups, and ceremonies, to provide more relevant and useful outputs.",
+                        "- Assignee": "Chris Qu",
+                        "- Acceptance Criteria": "The meeting minutes feature should be enhanced to adapt to different meeting types and generate meeting summaries that are tailored to the specific purpose of the meeting. The tailored meeting minutes should provide key highlights, action items, and insights based on the discussions and outcomes of each meeting type.",
+                        "- Duration Estimate": "3 days",
+                        "- Priority": "Low",
+                        "- User-story": "As a Telstra employee, I want a cost-effective agile project management tool that offers similar features as Copilot but can be tailored specifically for Telstra's needs, so that we can save costs without compromising functionality."
+                  }
+            ]
+      },
+      "Retro": {
+            "retro_actions": {
+                  "1": "Differentiate our product with an Agile focus: Tailor our solution towards an Agile work environment, since this is something that the current copilot solution lacks. This can include features that reduce time-consuming administrative tasks and cater specifically to Agile ceremonies such as retrospectives and stand-ups.",
+                  "2": "Make the most out of the context window: Ensure that our solution can accumulate knowledge from past meetings and use it to provide valuable insights. This can involve improving the meeting generator to take into account the purpose of the meeting (retro, stand-up, ceremony) and adjust the output accordingly.",
+                  "3": "Create a centralized dashboard: Differentiate our product by developing a central dashboard that allows users to manage and track all their meetings and associated tasks. This will add value by providing a centralized and streamlined experience, which is currently lacking in the copilot solution.",
+                  "4": "Integrate with copilot in the long term: While access to copilot is currently limited, we can consider integrating our solution with copilot in the future. This will require collaboration and co-development with Microsoft, leveraging our strategic partnership, and allowing for a more seamless experience for users.",
+                  "5": "Investigate Telstra-specific needs: Research and analyze Telstra's Agile work environment and identify any specific requirements and pain points that can be addressed by our solution. This will enable us to create a product that is tailored to Telstra's needs and provides a unique value proposition.",
+                  "6": "Gather requirements: Chase up the requirements from the product stakeholders, such as the business and executive teams, to ensure that their needs are considered in the development of the solution."
+            }
+      }
+}
