@@ -12,6 +12,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'meetings/1'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = 'super secret key'
+app.config['JSON_SORT_KEYS'] = False
+
 
 # global meeting_counter
 # meeting_counter = 1
@@ -94,7 +96,7 @@ def get_file(id):
         try:
 
             with open(file_name,'r') as file:
-                data = file.read()
+                data = json.load(file)
   
             return jsonify({'data': data}) 
         except:
@@ -185,12 +187,12 @@ def return_master_file():
     
     if(request.method == 'GET'): 
 
-        file_name = "master.json"
+        file_name = "master_list.json"
 
         try:
 
             with open(file_name,'r') as file:
-                data = file.read()
+                data = json.load(file)
   
             return jsonify({'data': data}) 
         except:

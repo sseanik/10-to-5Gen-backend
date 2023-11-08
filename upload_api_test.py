@@ -1,4 +1,5 @@
 import requests
+import json
 
 files = {'file': open('inputs/transcript_1.vtt','rb')}
 # files = {'file': open('inputs/file.txt','rb')}
@@ -13,8 +14,8 @@ files = {'file': open('inputs/transcript_1.vtt','rb')}
 # r = requests.get(url)
 
 # upload a new file. takes 30-60 seconds to process. Returns ID, name etc.
-url = "http://127.0.0.1:5000/uploadtranscript"
-r = requests.post(url,data={'name':'test_name_5','meetingType':'Standup'},files=files)
+# url = "http://13.211.169.215:5000/uploadtranscript"
+# r = requests.post(url,data={'name':'test_name_5','meetingType':'Standup'},files=files)
 
 
 
@@ -22,10 +23,17 @@ r = requests.post(url,data={'name':'test_name_5','meetingType':'Standup'},files=
 # url = "http://13.211.169.215:5000/masterlist"
 
 # request the AI results for a specified file ID e.g. 1
-# url = "http://13.211.169.215:5000/files/<file ID>"
+url = "http://13.211.169.215:5000/files/1"
 
-# r = requests.get(url)
+r = requests.get(url)
 
+# out_file = open("output_test.json", "w")  
+    
+    
+
+# json.dump(r.json(), out_file, indent = 6)  
+
+# out_file.close()
 
 
 # r = requests.post(url, files=files)
@@ -37,3 +45,5 @@ r = requests.post(url,data={'name':'test_name_5','meetingType':'Standup'},files=
 
 
 print(r.json())
+
+print(r.json()['data']["Meta"]['ID'])
