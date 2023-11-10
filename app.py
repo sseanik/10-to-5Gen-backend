@@ -9,7 +9,6 @@ import json
 from flask_cors import CORS, cross_origin
 
 
-# UPLOAD_FOLDER = 'meetings'
 ALLOWED_EXTENSIONS = {'txt','vtt','docx'}
 
 # Flask Config settings
@@ -23,7 +22,7 @@ app.json.sort_keys = False
 
 
 
-# Each time it starts, determine the number of meetings saved and setup
+# Each time this script/webserver starts, determine the number of meetings saved and setup
 # loca variable to keep track of meetings
 # neccessary incase the server restarts and for object permience
 folder_path = os.getcwd() + '/meetings' # Replace with the actual folder path
