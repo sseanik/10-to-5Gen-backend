@@ -1,278 +1,366 @@
-# Main program to run the API websever
-
-import os
-from flask import Flask, flash, request, redirect, url_for,jsonify
-from werkzeug.utils import secure_filename
-from utility import Meeting_Master,Agile_Master,Retro_Master,Master_AI
-from format import *
 import json
-from flask_cors import CORS, cross_origin
+import os
+import re
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    request,
+)
+from flask_cors import CORS
+import docx
+from openai import BadRequestError
+from ai import (
+    ai_assistant_question,
+    generate_details,
+    generate_minutes,
+    generate_actions,
+    generate_next_agenda,
+    generate_tickets,
+)
+from nlp import NLP_processing
+import firebase_admin
+from firebase_admin import credentials, firestore
 
+# Initialize Firebase Admin
+cred = credentials.Certificate("./serviceAccountKey.json")
+firebase_admin.initialize_app(cred, {"databaseURL": os.getenv("DB_URL")})
 
-ALLOWED_EXTENSIONS = {'txt','vtt','docx'}
+db = firestore.client()
 
-# Flask Config settings
 app = Flask(__name__)
 CORS(app)
-app.config['UPLOAD_FOLDER'] = 'meetings/1'
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
-app.secret_key = 'super secret key'
-app.json.sort_keys = False
+
+# Constants for file types
+TXT_FILE_TYPE = "text/plain"
+VTT_FILE_TYPE = "application/octet-stream"
+DOCX_FILE_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
 
 
+@app.route("/upload", methods=(["POST"]))
+def upload():
+    if "file" not in request.files:
+        return make_error(400, "File not provided in the request")
 
-# Each time this script/webserver starts, determine the number of meetings saved and setup
-# loca variable to keep track of meetings
-# neccessary incase the server restarts and for object permience
-folder_path = os.getcwd() + '/meetings' # Replace with the actual folder path
-
-if os.path.exists(folder_path) and os.path.isdir(folder_path):
-    subfolders = [f for f in os.listdir(folder_path) if os.path.isdir(os.path.join(folder_path, f))]
-    global meeting_counter
-    meeting_counter = len(subfolders) + 1
-
-# check upload is of valid file type
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# make a new folder for a new ID. Occurs after file upload
-def make_folder(ID):
-    # Get the current working directory
-    current_directory = os.getcwd()
-
-    # Specify the name of the new folder you want to create
-    new_folder_name = "meetings/" + str(ID)
-
-    # Combine the current directory and the new folder name to create the full path
-    new_folder_path = os.path.join(current_directory, new_folder_name)
-
-    # Check if the folder already exists
-    if not os.path.exists(new_folder_path):
-        # Create the new folder
-        os.mkdir(new_folder_path)
-        # print(f"Folder '{new_folder_name}' created in the current directory.")
-    # else:
-        # print(f"Folder '{new_folder_name}' already exists in the current directory.")
-
-    return
-
-
-# endpoint to return a JSON with AI Insight results for a given file ID
-# Contains Meeting insights, Jira suggestions, Retro actions and Meeting Meta data
-@app.route('/files/<id>', methods=['GET'])
-@cross_origin() # allow all origins all methods.
-def get_file(id):
-    
-    if(request.method == 'GET'): 
-
-        file_name = "meetings/"+str(id)+"/master_output.json"
-
+    try:
+        uploaded_file = dict(request.files)["file"]
+        file_type = uploaded_file.content_type
+    except Exception as e:
+        return make_error(400, e.message)
+    if file_type == TXT_FILE_TYPE:  # .txt
         try:
-
-            with open(file_name,'r') as file:
-                data = json.load(file)
-  
-            return jsonify({'data': data}) 
-        except:
-            return jsonify({'data': "File not found"})
-        # return "Got em"
-
-# Endpoint to upload a meeting transcript file via post request.
-# Currently takes .vtt,.txt and .docx
-# This function will return an acknowledgment or notifcation of failure
-# also, uploading file triggers the AI insight generation process for the uplaoded file
-@app.route('/uploadtranscript', methods=[ 'POST'])
-@cross_origin() # allow all origins all methods
-def upload_file():
-    if request.method == 'POST':
-
-        # convert incoming API call into a dict for easy access of contents
-        file = dict(request.files)['files']
-
-        # if a file is found
-        if file.filename:
-
-            # security of name to prevent injection attacks
-            filename = secure_filename(file.filename)
-            
-            global meeting_counter
-            old_meeting_counter = meeting_counter
-            
-            # make new folder, save file
-            make_folder(meeting_counter)
-            app.config['UPLOAD_FOLDER'] = 'meetings/' +str(meeting_counter)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            
-            # Access form data of file metadata
-            meta_type = request.form.get('meetingType')
-            meta_name = request.form.get('name')
-
-            # start the AI process for the files contents i.e. transcript
-            # takes about a minute
-            meta_dict = Master_AI(filename,meeting_counter,meta_name,meta_type)
-        
-            meeting_counter = meeting_counter + 1
-            
-            # return acknoeldegement that files is ready and its ID
-            return jsonify({'ID': old_meeting_counter,'title':meta_dict['title'],'type':meta_dict['type'],'date':meta_dict['date'],'attendees':meta_dict['attendees']}) 
-
-  
-    return jsonify({'message':'Invalid file upload'})
-
-
-# Endpoint to request the json master list of files.
-@app.route('/masterlist', methods=['GET'])
-@cross_origin() # allow all origins all methods.
-def return_master_file():
-    
-    if(request.method == 'GET'): 
-
-        file_name = "master_list.json"
-
+            text_content = uploaded_file.read().decode("cp1252")  # for ai, saving
+        except Exception as e:
+            return make_error(400, e.message)
+    elif file_type == VTT_FILE_TYPE:  # .vtt
         try:
+            text_content = uploaded_file.read().decode()  # for ai
+        except Exception as e:
+            return make_error(400, e.message)
+    elif file_type == DOCX_FILE_TYPE:
+        try:
+            text_content = process_docx_file(uploaded_file)
+        except Exception as e:
+            return make_error(400, e.message)
+    else:
+        return make_error(400, "Invalid file type provided")
+    name_arg, type_arg = request.form.get("name"), request.form.get("meetingType")
+    if name_arg is None or type_arg is None:
+        return make_error(400, f"Name or Meeting Type argument is missing")
 
-            with open(file_name,'r') as file:
-                data = json.load(file)
-  
-            return jsonify({'data': data}) 
-        except:
-            return jsonify({'data': "Master list not found"})
+    # Generate NLP Data
+    try:
+        (
+            sentences,  # string array
+            word_freq,  # counter
+            common_topics,  # array of tuples
+            topics,  # array string
+            sentiment,  # number
+            named_entities,  # array of dicts
+            summary,  # string
+            questions,  # string array
+        ) = NLP_processing(text_content)
 
-# The following endpoints are deprecated and should only be used to test a specifc function.
-# Not for production use.
+    except Exception as e:
+        return make_error(400, e.message)
 
-# # default endpoint. Allows manual file upload via form
-# @app.route('/', methods=['GET', 'POST'])
-# def home_page():
-    
-#     if request.method == 'POST':
-        
-#         # check if the post request has the file part
-#         if 'file' not in request.files:
-#             flash('No file part')
-#             return redirect(request.url)
-#         file = request.files['file']
-        
-#         # If the user does not select a file, the browser submits an
-#         # empty file without a filename.
-#         if file.filename == '':
-#             flash('No selected file')
-#             return redirect(request.url)
-        
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#             Meeting_Master(filename)
+    # Generate Summary
+    try:
+        attendees, date, time, duration = generate_details(text_content)
+    except BadRequestError as e:
+        print("--------------------")
 
-#             return
-#             return redirect(request.url)
-#     return '''
-#     <!doctype html>
-#     <title>Upload new File</title>
-#     <h1>Upload new File</h1>
-#     <form method=post enctype=multipart/form-data>
-#       <input type=file name=file>
-#       <input type=submit value=Upload>
-#     </form>
-#     '''
+        print(e.response)
+        print("--------------------")
+        return make_error(400, e.response)
 
+    # DB Upload
+    summary_db = {
+        "title": name_arg,
+        "type": type_arg,
+        "time": time,
+        "date": date,
+        "duration": duration,
+        "attendees": attendees,
+    }
+    nlpData = {
+        "namedEntities": named_entities,
+        "wordFreq": word_freq,
+        "topics": topics,
+        "sentences": sentences,
+        "commonTopics": dict(common_topics),
+        "sentiment": sentiment,
+        "questions": questions,
+        "summary": summary,
+    }
+    transcript = {
+        "transcript": str(text_content),
+        "aiGenerated": False,
+    }
+    minute = {
+        "agenda": [],
+        "summaryPoints": [],
+        "attendeeSummary": [],
+        "overallSummary": "",
+        "aiGenerated": False,
+    }
+    action = {"aiGenerated": False, "actionItems": []}
+    ticket = {
+        "aiGenerated": False,
+        "tickets": [],
+    }
+    agenda = {
+        "agendaItems": [],
+        "proposedSchedule": {
+            "attendees": [],
+            "date": "",
+        },
+        "aiGenerated": False,
+    }
 
-# Upload a file (transcript), and return just the meeting minute related AI tasks
-# @app.route('/meetinghelp', methods=[ 'POST'])
-# def meeting_route():
-#     if request.method == 'POST':
-#         # check if the post request has the file part
-#         if 'file' not in request.files:
-#             flash('No file part')
-#             # print('here 1')
-#             return redirect(request.url)
-#         file = request.files['file']
-#         # If the user does not select a file, the browser submits an
-#         # empty file without a filename.
-#         if file.filename == '':
-#             flash('No selected file')
-#             # print('here 2')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#             to_return = Meeting_Master(filename)
-#             # print('here 3')
-
-#             out_file = open("processed/meeting.json", "w")  
-    
-#             json.dump(to_return, out_file, indent = 6)  
-    
-#             out_file.close()
-  
-#             return jsonify({'data': to_return}) 
-#     return
+    try:
+        generated_id = upload_to_fire_store(
+            summary_db, nlpData, transcript, minute, action, ticket, agenda
+        )
+        return jsonify({"id": generated_id})
+    except Exception as e:
+        return make_error(400, e.message)
 
 
+@app.route("/meetings", methods=(["GET"]))
+def meetings():
+    try:
+        # Assuming your summaries are stored in a collection named "summaries"
+        summaries_ref = db.collection("summaries")
+        docs = summaries_ref.stream()
 
-# Upload a file (transcript), and return just the agile tickets related AI tasks
-# @app.route('/agilehelp', methods=[ 'POST'])
-# def agile_route():
-#     if request.method == 'POST':
-#         # check if the post request has the file part
-#         if 'file' not in request.files:
-#             flash('No file part')
-#             # print('here 1')
-#             return redirect(request.url)
-#         file = request.files['file']
-#         # If the user does not select a file, the browser submits an
-#         # empty file without a filename.
-#         if file.filename == '':
-#             flash('No selected file')
-#             # print('here 2')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#             to_return = Agile_Master(filename)
-#             # print('here 3')
+        meetings = []
+        for doc in docs:
+            meeting_data = doc.to_dict()
+            meeting_data["id"] = doc.id
+            meetings.append(meeting_data)
 
-#             out_file = open("processed/agile.json", "w")  
-    
-#             json.dump(to_return, out_file, indent = 6)  
-    
-#             out_file.close()
-  
-#             return jsonify({'data': to_return}) 
-#     return
+        return jsonify({"meetings": meetings})
 
-# Upload a file (transcript), and return just the retro related AI tasks
-# @app.route('/retrohelp', methods=[ 'POST'])
-# def retro_route():
-#     if request.method == 'POST':
-#         # check if the post request has the file part
-#         if 'file' not in request.files:
-#             flash('No file part')
-#             # print('here 1')
-#             return redirect(request.url)
-#         file = request.files['file']
-#         # If the user does not select a file, the browser submits an
-#         # empty file without a filename.
-#         if file.filename == '':
-#             flash('No selected file')
-#             # print('here 2')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#             to_return = Retro_Master(filename)
-#             # print('here 3')
+    except Exception as e:
+        return make_error(500, f"Error retrieving meetings: {e}")
 
-#             out_file = open("processed/retro.json", "w")  
-    
-#             json.dump(to_return, out_file, indent = 6)  
-    
-#             out_file.close()
-  
-#             return jsonify({'data': to_return}) 
-#     return
 
-if __name__ == '__main__':
-    app.run()
+@app.route("/summary/<id>", methods=(["GET"]))
+def summary(id):
+    db_data = read_from_fire_store(id, ["summaries"])
+    return jsonify(db_data)
+
+
+@app.route("/transcript/<id>", methods=(["GET"]))
+def transcript(id):
+    try:
+        db_data = read_from_fire_store(id, ["transcripts"])
+    except Exception as e:
+        return make_error(500, f"Error reading from database: {e}")
+
+    # if not bool(db_data["transcripts"]["aiGenerated"]):
+    #     try:
+    #         return Response(
+    #             parse_transcript(db_data, db, id), mimetype="text/event-stream"
+    #         )
+    #     except Exception as e:
+    #         return make_error(500, f"Error parsing transcript: {e}")
+    return jsonify(db_data["transcripts"])
+
+
+@app.route("/minutes/<id>", methods=(["GET"]))
+def minutes(id):
+    try:
+        db_data = read_from_fire_store(id, ["nlpData", "summaries", "minutes"])
+    except Exception as e:
+        return make_error(500, f"Error reading from database: {e}")
+
+    if not bool(db_data["minutes"]["aiGenerated"]):
+        try:
+            return Response(
+                generate_minutes(db_data, db, id), mimetype="text/event-stream"
+            )
+        except Exception as e:
+            return make_error(500, f"Error generating meeting minutes: {e}")
+    return jsonify(db_data["minutes"])
+
+
+@app.route("/actions/<id>", methods=(["GET"]))
+def actions(id):
+    try:
+        db_data = read_from_fire_store(id, ["nlpData", "summaries", "actions"])
+    except Exception as e:
+        return make_error(500, f"Error reading from database: {e}")
+
+    if not bool(db_data["actions"]["aiGenerated"]):
+        try:
+            return Response(
+                generate_actions(db_data, db, id), mimetype="text/event-stream"
+            )
+        except Exception as e:
+            return make_error(500, f"Error generating meeting actions: {e}")
+    return jsonify(db_data["actions"])
+
+
+@app.route("/tickets/<id>", methods=(["GET"]))
+def tickets(id):
+    try:
+        db_data = read_from_fire_store(id, ["nlpData", "summaries", "tickets"])
+    except Exception as e:
+        return make_error(500, f"Error reading from database: {e}")
+
+    if not bool(db_data["tickets"]["aiGenerated"]):
+        try:
+            return Response(
+                generate_tickets(db_data, db, id), mimetype="text/event-stream"
+            )
+        except Exception as e:
+            return make_error(500, f"Error generating suggested tickets: {e}")
+    return jsonify(db_data["tickets"])
+
+
+@app.route("/agenda/<id>", methods=(["GET"]))
+def agenda(id):
+    try:
+        db_data = read_from_fire_store(id, ["nlpData", "summaries", "agendas"])
+    except Exception as e:
+        return make_error(500, f"Error reading from database: {e}")
+
+    if not bool(db_data["agendas"]["aiGenerated"]):
+        try:
+            return Response(
+                generate_next_agenda(db_data, db, id), mimetype="text/event-stream"
+            )
+        except Exception as e:
+            return make_error(500, f"Error generating suggested next agenda: {e}")
+    return jsonify(db_data["agendas"])
+
+
+@app.route("/assistant", methods=(["POST"]))
+def assistant():
+    body = json.loads(request.get_data())
+    db_data = read_from_fire_store(body["meetingId"], ["transcripts"])
+    return Response(
+        ai_assistant_question(body["message"], db_data), mimetype="text/event-stream"
+    )
+
+
+@app.route("/dashboard", methods=(["GET"]))
+def dashboard():
+    collections = ["actions", "agendas", "minutes", "summaries", "tickets"]
+    overall_data = {}
+
+    for collection in collections:
+        docs = db.collection(collection).stream()
+        for doc in docs:
+            doc_id = doc.id
+            if doc_id not in overall_data:
+                overall_data[doc_id] = {
+                    "actions": {},
+                    "agendas": {},
+                    "minutes": {},
+                    "summaries": {},
+                    "tickets": {},
+                }
+            overall_data[doc_id][collection] = doc.to_dict()
+
+    return jsonify(overall_data)
+
+
+def read_from_fire_store(document_id, collections):
+    data = {}
+    for collection_name in collections:
+        doc_ref = db.collection(collection_name).document(document_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            data[collection_name] = doc.to_dict()
+        else:
+            print(f"No document found in {collection_name} with ID: {document_id}")
+    return data
+
+
+def upload_to_fire_store(
+    summary_db, nlpData, transcript, minute, action, ticket, agenda
+):
+    # Create a batched write operation
+    batch = db.batch()
+
+    # Create a new document ID
+    summary_doc_ref = db.collection("summaries").document()
+    new_id = summary_doc_ref.id
+
+    # Add summary data
+    batch.set(summary_doc_ref, summary_db)
+
+    nlp_doc_ref = db.collection("nlpData").document(new_id)
+    batch.set(nlp_doc_ref, nlpData)
+    transcript_doc_ref = db.collection("transcripts").document(new_id)
+    batch.set(transcript_doc_ref, transcript)
+    minute_doc_ref = db.collection("minutes").document(new_id)
+    batch.set(minute_doc_ref, minute)
+    action_doc_ref = db.collection("actions").document(new_id)
+    batch.set(action_doc_ref, action)
+    ticket_doc_ref = db.collection("tickets").document(new_id)
+    batch.set(ticket_doc_ref, ticket)
+    agenda_doc_ref = db.collection("agendas").document(new_id)
+    batch.set(agenda_doc_ref, agenda)
+
+    # Commit the batch
+    batch.commit()
+
+    return new_id
+
+
+def process_docx_file(uploaded_file):
+    temp_file_path = f"./db/temp/{uploaded_file.filename}.docx"
+    uploaded_file.save(temp_file_path)
+    doc = docx.Document(temp_file_path)
+    full_text_array = [para.text for para in doc.paragraphs]
+    os.remove(temp_file_path)
+    return "\n".join(full_text_array)
+
+
+def parse_vtt(vtt_text):
+    lines = vtt_text.split("\r")
+    no_inner_new_lines = list(
+        map(lambda x: x.replace("\n", "").replace("WEBVTT", ""), lines)
+    )
+    no_new_lines = list(filter(lambda x: x != "", no_inner_new_lines))
+    result = []  # saving
+    for destination, source in zip(*[iter(no_new_lines)] * 2):
+        parsed_time = destination.split(" --> ")[0].split(".")[0]
+        broken_name = source.split(">")[0].split("<v ")[1]
+        name = re.sub(" +", " ", broken_name)
+        text = source.split(">")[1].split("</v")[0]
+        result.append({"time": parsed_time, "name": name, "text": text})
+    return result
+
+
+def make_error(status_code, error_message):
+    app.logger.error(f"ERROR LOGGER: {error_message}\n")
+    response = jsonify({"status": status_code, "error": error_message})
+    response.status_code = status_code
+    return response
