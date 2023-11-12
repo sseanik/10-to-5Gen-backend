@@ -30,6 +30,7 @@ db = firestore.client()
 
 app = Flask(__name__)
 CORS(app)
+app.config["CORS_HEADERS"] = "Content-Type"
 
 # Constants for file types
 TXT_FILE_TYPE = "text/plain"
@@ -262,7 +263,9 @@ def agenda(id):
 @app.route("/assistant", methods=(["POST"]))
 def assistant():
     body = json.loads(request.get_data())
-    db_data = read_from_fire_store(body["meetingId"], ["transcripts"])
+    db_data = read_from_fire_store(
+        body["meetingId"], ["summaries", "minutes", "actions"]
+    )
     return Response(
         ai_assistant_question(body["message"], db_data), mimetype="text/event-stream"
     )

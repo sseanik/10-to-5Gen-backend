@@ -366,6 +366,26 @@ def generate_next_agenda(db_data, db, meeting_id):
 
 
 def ai_assistant_question(question, db_data):
+    attendees = db_data["summaries"]["attendees"]
+    title = db_data["summaries"]["title"]
+    meeting_type = db_data["summaries"]["type"]
+    #
+    meetingAgenda = db_data["minutes"]["agenda"]
+    overallSummary = db_data["minutes"]["overallSummary"]
+    #
+    actionItems = db_data["actions"]["actionItems"]
+
+    assignee = "assignee"
+    data = (
+        f"Meeting Title: {title}\n"
+        f"Meeting Type: {meeting_type}\n"
+        f"Attendees: {', '.join(attendees)}\n"
+        f"Meeting Summary: {overallSummary}\n\n"
+        f"Meeting Agenda:\n{' '.join(meetingAgenda)}\n\n"
+        f"Action Items:\n{' '.join([f'{action[assignee]}:' + ' '.join(action['actions']) for action in actionItems])}\n\n"
+        f"Based on the given transcript data above, can you answer the following question: {question}"
+    )
+
     response = client.chat.completions.create(
         model="gpt-3.5-turbo-16k",
         messages=[
@@ -383,9 +403,7 @@ def ai_assistant_question(question, db_data):
             },
             {
                 "role": "user",
-                "content": (
-                    f"Based on the given transcript data: {db_data}, can you answer the following question: {question}"
-                ),
+                "content": data,
             },
         ],
         stream=True,
@@ -393,14 +411,11 @@ def ai_assistant_question(question, db_data):
 
     overall_text = ""
     for chunk in response:
-        try:
-            if chunk.choices[0].delta.content is not None:
-                print(chunk.choices[0].delta.content)
-                yield f"data: {json.dumps(chunk.choices[0].delta.content)}\n\n"  # Format for SSE
-                overall_text += chunk.choices[0].delta.content
-        except Exception as e:
-            logging.error(f"Error in stream chunk: {e}")
-    return overall_text
+        if chunk.choices[0].delta.content is not None:
+            print(chunk.choices[0].delta.content)
+            yield f"data: {chunk.choices[0].delta.content}\n\n"  # Format for SSE
+            overall_text += chunk.choices[0].delta.content
+    yield "END"
 
 
 def parse_transcript(transcript_data, db, meeting_id):
