@@ -317,6 +317,24 @@ def generate_next_agenda(db_data, db, meeting_id):
                 "parameters": {
                     "type": "object",
                     "properties": {
+                        "proposedSchedule": {
+                            "type": "object",
+                            "description": "An object to detail the next suggested meeting's timeframe",
+                            "properties": {
+                                "date": {
+                                    "type": "string",
+                                    "description": "The proposed date for the next meeting",
+                                },
+                                "attendees": {
+                                    "type": "array",
+                                    "description": "The proposed people who should attend the meeting",
+                                    "items": {
+                                        "type": "string",
+                                        "description": "Name of the proposed attendee",
+                                    },
+                                },
+                            },
+                        },
                         "agendaItems": {
                             "type": "array",
                             "description": "A list of upcoming agenda items",
@@ -334,24 +352,6 @@ def generate_next_agenda(db_data, db, meeting_id):
                                             "type": "string",
                                             "description": "Dot point string detailing a part of the agenda",
                                         },
-                                    },
-                                },
-                            },
-                        },
-                        "proposedSchedule": {
-                            "type": "object",
-                            "description": "An object to detail the next suggested meeting's timeframe",
-                            "properties": {
-                                "date": {
-                                    "type": "string",
-                                    "description": "The proposed date for the next meeting",
-                                },
-                                "attendees": {
-                                    "type": "array",
-                                    "description": "The proposed people who should attend the meeting",
-                                    "items": {
-                                        "type": "string",
-                                        "description": "Name of the proposed attendee",
                                     },
                                 },
                             },
