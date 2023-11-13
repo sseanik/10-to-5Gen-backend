@@ -4,12 +4,14 @@ import re
 from flask import (
     Flask,
     Response,
+    abort,
     jsonify,
+    make_response,
     request,
 )
 from flask_cors import CORS
 import docx
-from openai import BadRequestError
+from openai import APIError
 from ai import (
     ai_assistant_question,
     generate_details,
@@ -90,12 +92,12 @@ def upload():
     # Generate Summary
     try:
         attendees, date, time, duration = generate_details(text_content)
-    except BadRequestError as e:
-        print("--------------------")
-
-        print(e.response)
-        print("--------------------")
-        return make_error(400, e.response)
+    except APIError as e:
+        abort(
+            make_response(
+                jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+            )
+        )
 
     # DB Upload
     summary_db = {
@@ -204,8 +206,12 @@ def minutes(id):
             return Response(
                 generate_minutes(db_data, db, id), mimetype="text/event-stream"
             )
-        except Exception as e:
-            return make_error(500, f"Error generating meeting minutes: {e}")
+        except APIError as e:
+            abort(
+                make_response(
+                    jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+                )
+            )
     return jsonify(db_data["minutes"])
 
 
@@ -221,8 +227,12 @@ def actions(id):
             return Response(
                 generate_actions(db_data, db, id), mimetype="text/event-stream"
             )
-        except Exception as e:
-            return make_error(500, f"Error generating meeting actions: {e}")
+        except APIError as e:
+            abort(
+                make_response(
+                    jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+                )
+            )
     return jsonify(db_data["actions"])
 
 
@@ -238,8 +248,12 @@ def tickets(id):
             return Response(
                 generate_tickets(db_data, db, id), mimetype="text/event-stream"
             )
-        except Exception as e:
-            return make_error(500, f"Error generating suggested tickets: {e}")
+        except APIError as e:
+            abort(
+                make_response(
+                    jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+                )
+            )
     return jsonify(db_data["tickets"])
 
 
@@ -255,8 +269,12 @@ def agenda(id):
             return Response(
                 generate_next_agenda(db_data, db, id), mimetype="text/event-stream"
             )
-        except Exception as e:
-            return make_error(500, f"Error generating suggested next agenda: {e}")
+        except APIError as e:
+            abort(
+                make_response(
+                    jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+                )
+            )
     return jsonify(db_data["agendas"])
 
 
@@ -266,9 +284,17 @@ def assistant():
     db_data = read_from_fire_store(
         body["meetingId"], ["summaries", "minutes", "actions"]
     )
-    return Response(
-        ai_assistant_question(body["message"], db_data), mimetype="text/event-stream"
-    )
+    try:
+        return Response(
+            ai_assistant_question(body["message"], db_data),
+            mimetype="text/event-stream",
+        )
+    except APIError as e:
+        abort(
+            make_response(
+                jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
+            )
+        )
 
 
 @app.route("/dashboard", methods=(["GET"]))
