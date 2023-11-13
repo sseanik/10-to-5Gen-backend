@@ -45,33 +45,33 @@ DOCX_FILE_TYPE = (
 @app.route("/upload", methods=(["POST"]))
 def upload():
     if "file" not in request.files:
-        return make_error(400, "File not provided in the request")
+        make_error(400, "File not provided in the request")
 
     try:
         uploaded_file = dict(request.files)["file"]
         file_type = uploaded_file.content_type
     except Exception as e:
-        return make_error(400, e.message)
+        make_error(400, str(e))
     if file_type == TXT_FILE_TYPE:  # .txt
         try:
             text_content = uploaded_file.read().decode("cp1252")  # for ai, saving
         except Exception as e:
-            return make_error(400, e.message)
+            make_error(400, str(e))
     elif file_type == VTT_FILE_TYPE:  # .vtt
         try:
             text_content = uploaded_file.read().decode()  # for ai
         except Exception as e:
-            return make_error(400, e.message)
+            make_error(400, str(e))
     elif file_type == DOCX_FILE_TYPE:
         try:
             text_content = process_docx_file(uploaded_file)
         except Exception as e:
-            return make_error(400, e.message)
+            make_error(400, str(e))
     else:
-        return make_error(400, "Invalid file type provided")
+        make_error(400, "Invalid file type provided")
     name_arg, type_arg = request.form.get("name"), request.form.get("meetingType")
     if name_arg is None or type_arg is None:
-        return make_error(400, f"Name or Meeting Type argument is missing")
+        make_error(400, "Name or Meeting Type argument is missing")
 
     # Generate NLP Data
     try:
@@ -87,17 +87,13 @@ def upload():
         ) = NLP_processing(text_content)
 
     except Exception as e:
-        return make_error(400, e.message)
+        make_error(400, str(e))
 
     # Generate Summary
     try:
         attendees, date, time, duration = generate_details(text_content)
     except APIError as e:
-        abort(
-            make_response(
-                jsonify(error=json.loads(e.response.text)["error"]["message"]), 400
-            )
-        )
+        make_error(400, json.loads(e.response.text)["error"]["message"])
 
     # DB Upload
     summary_db = {
@@ -149,7 +145,7 @@ def upload():
         )
         return jsonify({"id": generated_id})
     except Exception as e:
-        return make_error(400, e.message)
+        make_error(400, str(e))
 
 
 @app.route("/meetings", methods=(["GET"]))
@@ -168,7 +164,7 @@ def meetings():
         return jsonify({"meetings": meetings})
 
     except Exception as e:
-        return make_error(500, f"Error retrieving meetings: {e}")
+        make_error(400, str(e))
 
 
 @app.route("/summary/<id>", methods=(["GET"]))
@@ -182,7 +178,7 @@ def transcript(id):
     try:
         db_data = read_from_fire_store(id, ["transcripts"])
     except Exception as e:
-        return make_error(500, f"Error reading from database: {e}")
+        make_error(400, str(e))
 
     # if not bool(db_data["transcripts"]["aiGenerated"]):
     #     try:
@@ -199,7 +195,7 @@ def minutes(id):
     try:
         db_data = read_from_fire_store(id, ["nlpData", "summaries", "minutes"])
     except Exception as e:
-        return make_error(500, f"Error reading from database: {e}")
+        make_error(400, str(e))
 
     if not bool(db_data["minutes"]["aiGenerated"]):
         try:
@@ -220,7 +216,7 @@ def actions(id):
     try:
         db_data = read_from_fire_store(id, ["nlpData", "summaries", "actions"])
     except Exception as e:
-        return make_error(500, f"Error reading from database: {e}")
+        make_error(400, str(e))
 
     if not bool(db_data["actions"]["aiGenerated"]):
         try:
@@ -241,7 +237,7 @@ def tickets(id):
     try:
         db_data = read_from_fire_store(id, ["nlpData", "summaries", "tickets"])
     except Exception as e:
-        return make_error(500, f"Error reading from database: {e}")
+        make_error(500, f"Error reading from database: {e}")
 
     if not bool(db_data["tickets"]["aiGenerated"]):
         try:
@@ -262,7 +258,7 @@ def agenda(id):
     try:
         db_data = read_from_fire_store(id, ["nlpData", "summaries", "agendas"])
     except Exception as e:
-        return make_error(500, f"Error reading from database: {e}")
+        make_error(500, f"Error reading from database: {e}")
 
     if not bool(db_data["agendas"]["aiGenerated"]):
         try:
@@ -364,7 +360,7 @@ def upload_to_fire_store(
 
 
 def process_docx_file(uploaded_file):
-    temp_file_path = f"./db/temp/{uploaded_file.filename}.docx"
+    temp_file_path = f"./db/temp/{uploaded_file.filename}"
     uploaded_file.save(temp_file_path)
     doc = docx.Document(temp_file_path)
     full_text_array = [para.text for para in doc.paragraphs]
@@ -390,6 +386,4 @@ def parse_vtt(vtt_text):
 
 def make_error(status_code, error_message):
     app.logger.error(f"ERROR LOGGER: {error_message}\n")
-    response = jsonify({"status": status_code, "error": error_message})
-    response.status_code = status_code
-    return response
+    abort(make_response(jsonify(error=error_message), status_code))
