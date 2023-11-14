@@ -315,6 +315,26 @@ def dashboard():
     return jsonify(overall_data)
 
 
+@app.route("/regenerate", methods=(["PUT"]))
+def regenerate_data():
+    body = json.loads(request.get_data())
+    prompt, collection, meetingId = body["prompt"], body["path"], body["meetingId"]
+
+    doc_ref = db.collection(collection).document(meetingId)
+
+    # Check if the document exists
+    if not doc_ref.get().exists:
+        return make_error(
+            400, "Something went wrong with the DB"
+        )  # Or handle the non-existence case as needed
+
+    # Update the document
+    doc_ref.update({"aiGenerated": False, "prompt": prompt})
+
+    # Return the updated document data or any confirmation needed
+    return jsonify({"data": doc_ref.get().to_dict()})
+
+
 def read_from_fire_store(document_id, collections):
     data = {}
     for collection_name in collections:
